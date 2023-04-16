@@ -1,0 +1,56 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Swagger",
+    "description": "",
+    "version": "1.0"
+  },
+  "produces": ["application/json"],
+  "paths": {
+    "/admin": {
+      "post": {
+        "x-swagger-router-controller": "home",
+        "tags": ["admin"],
+        "description": "add admin",
+        "parameters": [
+          {
+            "name": "username",
+            "in": "json",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "password",
+            "in": "json",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "email",
+            "in": "json",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/bar": {
+      "get": {
+        "x-swagger-router-controller": "bar",
+        "operationId": "impossible",
+        "tags": ["/test"],
+        "description": "",
+        "parameters": [],
+        "responses": {}
+      }
+    }
+  },
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "name": "api_key",
+      "in": "header"
+    }
+  }
+}

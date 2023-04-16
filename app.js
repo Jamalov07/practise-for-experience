@@ -3,18 +3,23 @@ const config = require("config");
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const app = express();
+const bodyParser = require("body-parser");
 const PORT = config.get("port");
 const routes = require("./routes/index.routes");
 const errorHandler = require("./middlewares/errorHandling");
 const { errLogger, winstonLogger } = require("./middlewares/loggerMiddleware");
 
+const swaggerUi = require("swagger-ui-express");
+const swaggerDocument = require("./swagger.json");
+
 app.use(winstonLogger);
 app.use(express.json());
+app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(routes);
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use(errLogger);
 app.use(errorHandler);
-
 
 async function start() {
   try {
