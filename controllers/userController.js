@@ -4,6 +4,7 @@ const ApiError = require("../errors/ApiError");
 const bcrypt = require("bcryptjs");
 const Jwt = require("../services/JwtService");
 const config = require("config");
+const { validationResult } = require("express-validator");
 
 const getUsers = async (req, res) => {
   try {
@@ -38,6 +39,10 @@ const getUser = async (req, res) => {
 
 const addUser = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.error(400, { friendlyMsg: errors.array() });
+    }
     const { full_name, phone_number, email, username, password } = req.body;
     const hashedPassword = bcrypt.hashSync(password, 7);
 
@@ -70,6 +75,10 @@ const addUser = async (req, res) => {
 
 const editUser = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.error(400, { friendlyMsg: errors.array() });
+    }
     if (!mongoose.isValidObjectId(req.params.id)) {
       return res.error(400, { friendlyMsg: "invalid User id" });
     }
@@ -99,7 +108,9 @@ const editUser = async (req, res) => {
       },
       { new: true }
     );
-    res.ok(200, { user: user, friendlyMsg: "User updated" });
+
+    const updatedUser = await User.findOne({ _id: user.id });
+    res.ok(200, { user: updatedUser, friendlyMsg: "User updated" });
   } catch (error) {
     ApiError.internal(res, {
       message: error,
@@ -129,6 +140,10 @@ const deleteUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.error(400, { friendlyMsg: errors.array() });
+    }
     const { email, password } = req.body;
     const user = await User.findOne({ email: email });
 

@@ -5,6 +5,7 @@ const bcrypt = require("bcryptjs");
 const MailerService = require("../services/MailerService");
 const Jwt = require("../services/JwtService");
 const config = require("config");
+const { validationResult } = require("express-validator");
 
 const getAdmins = async (req, res) => {
   try {
@@ -38,6 +39,10 @@ const getAdminById = async (req, res) => {
 
 const addAdmin = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.error(400, { friendlyMsg: errors.array() });
+    }
     const { username, password, email } = req.body;
     const hashedPassword = bcrypt.hashSync(password, 7);
 
@@ -72,6 +77,10 @@ const addAdmin = async (req, res) => {
 
 const editAdmin = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.error(400, { friendlyMsg: errors.array() });
+    }
     if (!mongoose.isValidObjectId(req.params.id)) {
       return res.error(400, { friendlyMsg: "invalid Admin id" });
     }
@@ -96,7 +105,9 @@ const editAdmin = async (req, res) => {
       },
       { new: true }
     );
-    res.ok(200, { admin: admin, message: "Admin updated" });
+
+    const updatedAdmin = await Admin.findOne({ _id: admin.id });
+    res.ok(200, { admin: updatedAdmin, message: "Admin updated" });
   } catch (error) {
     ApiError.internal(res, {
       message: error,
@@ -126,9 +137,12 @@ const deleteAdmin = async (req, res) => {
 
 const loginAdmin = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.error(400, { friendlyMsg: errors.array() });
+    }
     const { email, password } = req.body;
     const admin = await Admin.findOne({ email: email });
-
     if (!admin) {
       return res.error(400, {
         friendlyMsg: "Admin not found brat biz sizni tanimadik",

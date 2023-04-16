@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const { Product } = require("../models/productSchema");
 const ApiError = require("../errors/ApiError");
 const fs = require("fs");
+const { validationResult } = require("express-validator");
 
 const getProducts = async (req, res) => {
   try {
@@ -36,6 +37,10 @@ const getProduct = async (req, res) => {
 
 const addProduct = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.error(400, { friendlyMsg: errors.array() });
+    }
     const { name, description, price } = req.body;
     if (!req.file) {
       return res.error(400, { friendlyMsg: "File is required" });
@@ -59,6 +64,10 @@ const addProduct = async (req, res) => {
 
 const editProduct = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.error(400, { friendlyMsg: errors.array() });
+    }
     if (!mongoose.isValidObjectId(req.params.id)) {
       return res.error(400, { friendlyMsg: "invalid Product id" });
     }
@@ -88,7 +97,9 @@ const editProduct = async (req, res) => {
       },
       { new: true }
     );
-    res.ok(200, { product: product, friendlyMsg: "Product updated" });
+
+    const updatedProduct = await Product.findOne({ _id: product.id });
+    res.ok(200, { product: updatedProduct, friendlyMsg: "Product updated" });
   } catch (error) {
     ApiError.internal(res, {
       message: error,
@@ -120,10 +131,51 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+const filterProduct = async (req, res) => {
+  try {
+    const { name, price, createdBy } = req.body;
+    let options = {};
+    if (name) {
+      options.name = name;
+    }
+    if (price) {
+      options.price = price;
+    }
+
+    if (createdBy) {
+      options.createdBy = createdBy;
+    }
+    const products = await Product.find(options);
+    res.ok(200, products);
+  } catch (error) {
+    ApiError.internal(res, {
+      message: error,
+      friendlyMsg: "Serverda hatolik",
+    });
+  }
+};
+
+const paginateProduct = async (req, res) => {
+  try {
+    const page = req.params.page;
+    const limit = 10;
+    const skip = (+page - 1) * limit;
+    const products = await Product.find().skip(skip).limit(limit);
+    res.ok(200, products);
+  } catch (error) {
+    ApiError.internal(res, {
+      message: error,
+      friendlyMsg: "Serverda hatolik",
+    });
+  }
+};
+
 module.exports = {
   getProducts,
   getProduct,
   addProduct,
   editProduct,
   deleteProduct,
+  filterProduct,
+  paginateProduct,
 };

@@ -50,6 +50,16 @@ class MailService {
       <div> <h1><strong>${message}</strong></h1></div>`,
     });
   }
+  async newOrderMessage(toEmail, message) {
+    await this.transporter.sendMail({
+      from: config.get("smtp_user"),
+      to: toEmail,
+      subject: "Buyurtma",
+      text: ``,
+      html: `
+      <div> <h1><strong>${message}</strong></h1></div>`,
+    });
+  }
 }
 
 module.exports = new MailService();

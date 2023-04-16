@@ -6,11 +6,15 @@ const app = express();
 const PORT = config.get("port");
 const routes = require("./routes/index.routes");
 const errorHandler = require("./middlewares/errorHandling");
+const { errLogger, winstonLogger } = require("./middlewares/loggerMiddleware");
 
+app.use(winstonLogger);
 app.use(express.json());
 app.use(cookieParser());
 app.use(routes);
+app.use(errLogger);
 app.use(errorHandler);
+
 
 async function start() {
   try {

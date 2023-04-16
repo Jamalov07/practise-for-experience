@@ -5,13 +5,17 @@ const Validator = require("../middlewares/validator");
 const upload = require("../services/FileService");
 const AdminMiddleware = require("../middlewares/adminMiddleware");
 const { Admin } = require("../models/adminSchema");
+const { productAdd, productEdit } = require("../middlewares/expressValidator");
 const router = express.Router();
 
 router.get("/", Product.getProducts);
+router.get("/filter", Product.filterProduct);
 router.get("/:id", Product.getProduct);
+router.get("/page/:page", Product.paginateProduct);
 router.post(
   "/",
   AdminMiddleware,
+  ...productAdd,
   upload.single("image"),
   Validator("product"),
   Product.addProduct
@@ -19,6 +23,7 @@ router.post(
 router.patch(
   "/:id",
   AdminMiddleware,
+  ...productEdit,
   upload.single("image"),
   Product.editProduct
 );
