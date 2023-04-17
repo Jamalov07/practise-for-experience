@@ -60,7 +60,7 @@ const productAdd = [
   body("name").notEmpty(),
   body("price").notEmpty().isNumeric(),
   body("description").optional(),
-  body("createdBy").notEmpty(),
+  body("createdBy"),
 ];
 
 const productEdit = [
@@ -73,7 +73,7 @@ const productEdit = [
 const orderAdd = [
   body("customer").notEmpty(),
   body("products").notEmpty().isArray(),
-  body("orderDate").optional().isDate(),
+  body("orderDate").optional(),
   body("status").notEmpty().isString(),
 ];
 

@@ -6,7 +6,7 @@ require("winston-mongodb");
 
 const winstonLogger = expressWinston.logger({
   transports: [
-    new transports.Console(),
+    // new transports.Console(),
     new transports.File({ filename: "logs/logger.log" }),
   ],
   format: combine(json(), metadata(), prettyPrint()),

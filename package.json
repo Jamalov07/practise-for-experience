@@ -25,6 +25,7 @@
     "nodemailer": "^6.9.1",
     "pg": "^8.10.0",
     "postgresql": "^0.0.1",
+    "redis": "^4.6.5",
     "sequelize": "^6.31.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^4.6.2",

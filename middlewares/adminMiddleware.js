@@ -19,6 +19,7 @@ module.exports = async function (req, res, next) {
       return res.error(400, { message: "invalid token" });
     }
     req.admin = decodedData;
+    console.log(decodedData);
     req.body.createdBy = decodedData.id
     if (decodedData.is_creator) {
       return next();

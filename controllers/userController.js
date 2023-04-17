@@ -5,10 +5,17 @@ const bcrypt = require("bcryptjs");
 const Jwt = require("../services/JwtService");
 const config = require("config");
 const { validationResult } = require("express-validator");
+const { client } = require("../services/RedisService");
 
 const getUsers = async (req, res) => {
   try {
+    const cashedUsers = await client.get("users");
+    if (cashedUsers) {
+      return res.ok(200, JSON.parse(cashedUsers));
+    }
+
     const users = await User.find({});
+    await client.set("users", JSON.stringify(users));
     console.log(users);
     res.ok(200, users);
   } catch (error) {
@@ -53,6 +60,9 @@ const addUser = async (req, res) => {
       phone_number,
       username,
     });
+
+    await client.del("users");
+
     const payload = {
       sub: newUser.id,
       is_active: newUser.is_active,
@@ -108,6 +118,7 @@ const editUser = async (req, res) => {
       },
       { new: true }
     );
+    await client.del("users");
 
     const updatedUser = await User.findOne({ _id: user.id });
     res.ok(200, { user: updatedUser, friendlyMsg: "User updated" });
@@ -129,6 +140,8 @@ const deleteUser = async (req, res) => {
       return res.error(400, { friendlyMsg: "User not found" });
     }
     await User.deleteOne({ _id: req.params.id });
+    await client.del("users");
+
     res.ok(200, { friendlyMsg: "User deleted" });
   } catch (error) {
     ApiError.internal(res, {

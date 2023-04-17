@@ -13,8 +13,8 @@ router.get("/:id", Order.getOrder);
 router.post(
   "/",
   UserMiddleware,
-  ...orderAdd,
   Validator("order"),
+  ...orderAdd,
   Order.addOrder
 );
 router.patch("/:id", ...orderEdit, UserMiddleware, Order.editOrder);

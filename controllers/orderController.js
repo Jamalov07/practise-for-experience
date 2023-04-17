@@ -4,10 +4,16 @@ const ApiError = require("../errors/ApiError");
 const MailerService = require("../services/MailerService");
 const { User } = require("../models/userSchema");
 const { validationResult } = require("express-validator");
+const { client } = require("../services/RedisService");
 
 const getOrders = async (req, res) => {
   try {
+    const cashedOrders = await client.get("orders");
+    if (cashedOrders) {
+      return res.ok(200, JSON.parse(cashedOrders));
+    }
     const orders = await Order.find({});
+    client.set("orders", JSON.stringify(orders));
     console.log(orders);
     res.ok(200, orders);
   } catch (error) {
@@ -49,6 +55,7 @@ const addOrder = async (req, res) => {
       status,
       orderDate,
     });
+    await client.del("orders");
     const user = await User.findOne({ _id: customer });
     if (user) {
       await MailerService.newOrderMessage(
@@ -107,6 +114,7 @@ const editOrder = async (req, res) => {
       },
       { new: true }
     );
+    await client.del("orders");
     const updatedOrder = await Order.findOne({ _id: order.id });
     res.ok(200, { order: updatedOrder, friendlyMsg: "Order updated" });
   } catch (error) {
@@ -128,6 +136,7 @@ const deleteOrder = async (req, res) => {
     }
 
     await Order.deleteOne({ _id: req.params.id });
+    await client.del("orders");
     res.ok(200, { friendlyMsg: "Order deleted" });
   } catch (error) {
     ApiError.internal(res, {
@@ -139,7 +148,7 @@ const deleteOrder = async (req, res) => {
 
 const filterOrder = async (req, res) => {
   try {
-    const { status, customer, products, orderDate } = req.body;
+    const { status, customer, products, orderDate } = req.query;
     let options = {};
 
     if (status) {
@@ -152,7 +161,7 @@ const filterOrder = async (req, res) => {
       options.orderDate = orderDate;
     }
     if (products) {
-      options.products = products;
+      options.products = products.split(",");
     }
     const orders = await Order.find(options);
     console.log(orders);

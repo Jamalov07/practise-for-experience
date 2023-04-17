@@ -3,10 +3,16 @@ const { Product } = require("../models/productSchema");
 const ApiError = require("../errors/ApiError");
 const fs = require("fs");
 const { validationResult } = require("express-validator");
+const { client } = require("../services/RedisService");
 
 const getProducts = async (req, res) => {
   try {
+    const cashedProducts = await client.get("products");
+    if (cashedProducts) {
+      return res.ok(200, JSON.parse(cashedProducts));
+    }
     const products = await Product.find({});
+    await client.set("products", JSON.stringify(products));
     console.log(products);
     res.ok(200, products);
   } catch (error) {
@@ -52,6 +58,7 @@ const addProduct = async (req, res) => {
       image: req.file.filename,
       createdBy: req.admin.id,
     });
+    await client.del("products");
 
     res.ok(200, { product: newProduct });
   } catch (error) {
@@ -97,6 +104,7 @@ const editProduct = async (req, res) => {
       },
       { new: true }
     );
+    await client.del("products");
 
     const updatedProduct = await Product.findOne({ _id: product.id });
     res.ok(200, { product: updatedProduct, friendlyMsg: "Product updated" });
@@ -122,6 +130,8 @@ const deleteProduct = async (req, res) => {
       fs.unlinkSync(`./public/images/${product.image}`);
     }
     await Product.deleteOne({ _id: req.params.id });
+    await client.del("products");
+
     res.ok(200, { friendlyMsg: "Product deleted" });
   } catch (error) {
     ApiError.internal(res, {
@@ -133,7 +143,8 @@ const deleteProduct = async (req, res) => {
 
 const filterProduct = async (req, res) => {
   try {
-    const { name, price, createdBy } = req.body;
+    console.log(req.query);
+    const { name, price, createdBy } = req.query;
     let options = {};
     if (name) {
       options.name = name;

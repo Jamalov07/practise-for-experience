@@ -15,9 +15,9 @@ router.get("/page/:page", Product.paginateProduct);
 router.post(
   "/",
   AdminMiddleware,
-  ...productAdd,
   upload.single("image"),
   Validator("product"),
+  ...productAdd,
   Product.addProduct
 );
 router.patch(

@@ -6,11 +6,18 @@ const MailerService = require("../services/MailerService");
 const Jwt = require("../services/JwtService");
 const config = require("config");
 const { validationResult } = require("express-validator");
+const { client } = require("../services/RedisService");
 
 const getAdmins = async (req, res) => {
   try {
+    const cashedAdmins = await client.get("admins");
+    if (cashedAdmins) {
+      console.log(11111);
+      return res.ok(200, JSON.parse(cashedAdmins));
+    }
     const admins = await Admin.find();
     console.log(admins);
+    await client.set("admins", JSON.stringify(admins));
     res.ok(200, admins);
   } catch (error) {
     ApiError.internal(res, {
@@ -60,7 +67,7 @@ const addAdmin = async (req, res) => {
       password: hashedPassword,
       is_creator: creator,
     });
-
+    await client.del("admins");
     await MailerService.sendMessage(
       newAdmin.email,
       `Assalomu alaykum hurmatli ${newAdmin.username}! Admin bo'lganingiz bilan tabriklaymiz!`
@@ -107,6 +114,7 @@ const editAdmin = async (req, res) => {
     );
 
     const updatedAdmin = await Admin.findOne({ _id: admin.id });
+    await client.del("admins");
     res.ok(200, { admin: updatedAdmin, message: "Admin updated" });
   } catch (error) {
     ApiError.internal(res, {
@@ -126,7 +134,8 @@ const deleteAdmin = async (req, res) => {
       return res.error(400, { friendlyMsg: "Admin not found" });
     }
     await Admin.deleteOne({ _id: req.params.id });
-    res.error(400, { admin: admin, friendlyMsg: "Admin deleted" });
+    await client.del("admins");
+    res.ok(200, { admin: admin, friendlyMsg: "Admin deleted" });
   } catch (error) {
     ApiError.internal(res, {
       message: error,
