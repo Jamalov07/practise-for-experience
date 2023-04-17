@@ -86,7 +86,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "number"
           }
         ],
         "responses": {}
@@ -101,7 +101,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "number"
           },
           {
             "name": "body",
@@ -136,7 +136,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "number"
           }
         ],
         "responses": {}
@@ -232,7 +232,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "number"
           }
         ],
         "responses": {}
@@ -247,7 +247,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "number"
           },
           {
             "name": "body",
@@ -293,7 +293,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "number"
           }
         ],
         "responses": {}
@@ -364,7 +364,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "number"
           }
         ],
         "responses": {}
@@ -384,7 +384,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "number"
           },
           {
             "name": "name",
@@ -430,7 +430,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "number"
           }
         ],
         "responses": {}
@@ -545,7 +545,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "number"
           }
         ],
         "responses": {}
@@ -565,7 +565,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "number"
           },
           {
             "name": "body",
@@ -605,7 +605,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "number"
           }
         ],
         "responses": {}

@@ -9,7 +9,7 @@ const Order = sequelize.define("order", {
     unique: true,
   },
   customer: { type: DataTypes.INTEGER },
-  products: { type: DataTypes.ARRAY },
+  products: { type: DataTypes.ARRAY(DataTypes.INTEGER) },
   orderDate: { type: DataTypes.DATE, defaultValue: new Date() },
   status: { type: DataTypes.STRING, defaultValue: "pending" },
 });

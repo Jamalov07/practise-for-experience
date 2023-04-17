@@ -1,8 +1,8 @@
 const Joi = require("joi");
 
 const orderSchema = Joi.object({
-  customer: Joi.string().required(),
-  products: Joi.array().items(Joi.string()).required(),
+  customer: Joi.number().required(),
+  products: Joi.array().items(Joi.number()).required(),
   orderDate: Joi.date().default(Date.now),
   status: Joi.string()
     .valid("pending", "processing", "shipped", "delivered")

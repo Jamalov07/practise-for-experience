@@ -34,8 +34,8 @@ const adminEdit = [
 const userAdd = [
   body("full_name").notEmpty().isLength({ min: 6 }),
   body("phone_number").notEmpty().isLength({ min: 10 }),
-  body("username").notEmpty().isLength({ min: 10 }),
-  body("password").notEmpty().isLength({ min: 10 }),
+  body("username").notEmpty().isLength({ min: 6 }),
+  body("password").notEmpty().isLength({ min: 6 }),
   body("email").notEmpty().isEmail(),
 ];
 

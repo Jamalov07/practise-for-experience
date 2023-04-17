@@ -1,6 +1,3 @@
-const mongoose = require("mongoose");
-// const { User } = require("../models/userSchema");
-
 const ApiError = require("../errors/ApiError");
 const bcrypt = require("bcryptjs");
 const Jwt = require("../services/JwtService");
@@ -91,38 +88,22 @@ const editUser = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.error(400, { friendlyMsg: errors.array() });
     }
-    // if (!mongoose.isValidObjectId(req.params.id)) {
-    //   return res.error(400, { friendlyMsg: "invalid User id" });
-    // }
     const user = await User.findOne({ where: { id: req.params.id } });
     if (!user) {
       return res.error(400, { friendlyMsg: "User not found" });
     }
 
-    const { full_name, email, phone_number, username, password } = req.body;
-    let newFullName = full_name || user.full_name;
-    let newPhoneNumber = phone_number || user.phone_number;
-    let newUsername = username || user.username;
-    let newEmail = email || user.email;
     let newPassword = user.password;
-    if (password) {
+    if (req.body.password) {
       const hashedPassword = bcrypt.hashSync(password, 7);
       newPassword = hashedPassword;
     }
-    await User.update(
-      { _id: req.params.id },
-      {
-        full_name: newFullName,
-        email: newEmail,
-        phone_number: newPhoneNumber,
-        username: newUsername,
-        password: newPassword,
-      }
-    );
+    await user.update({
+      ...req.body,
+      password: newPassword,
+    });
     await client.del("users");
-
-    const updatedUser = await User.findOne({ where: { id: user.id } });
-    res.ok(200, { user: updatedUser, friendlyMsg: "User updated" });
+    res.ok(200, { user: user, friendlyMsg: "User updated" });
   } catch (error) {
     ApiError.internal(res, {
       message: error,
@@ -133,14 +114,11 @@ const editUser = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    // if (!mongoose.isValidObjectId(req.params.id)) {
-    //   return res.error(400, { friendlyMsg: "invalid User id" });
-    // }
-    const user = await User.findOne({ _id: req.params.id });
+    const user = await User.findOne({ where: { id: req.params.id } });
     if (!user) {
       return res.error(400, { friendlyMsg: "User not found" });
     }
-    await User.deleteOne({ _id: req.params.id });
+    await User.destroy({ where: { id: req.params.id } });
     await client.del("users");
 
     res.ok(200, { friendlyMsg: "User deleted" });
@@ -159,7 +137,7 @@ const loginUser = async (req, res) => {
       return res.error(400, { friendlyMsg: errors.array() });
     }
     const { email, password } = req.body;
-    const user = await User.findOne({ email: email });
+    const user = await User.findOne({ where: { email: email } });
 
     if (!user) {
       return res.error(400, {

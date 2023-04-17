@@ -1,9 +1,8 @@
-const mongoose = require("mongoose");
-const { Product } = require("../models/productSchema");
 const ApiError = require("../errors/ApiError");
 const fs = require("fs");
 const { validationResult } = require("express-validator");
 const { client } = require("../services/RedisService");
+const { Product } = require("../models/productModel");
 
 const getProducts = async (req, res) => {
   try {
@@ -11,9 +10,8 @@ const getProducts = async (req, res) => {
     if (cashedProducts) {
       return res.ok(200, JSON.parse(cashedProducts));
     }
-    const products = await Product.find({});
+    const products = await Product.findAll();
     await client.set("products", JSON.stringify(products));
-    console.log(products);
     res.ok(200, products);
   } catch (error) {
     ApiError.internal(res, {
@@ -25,10 +23,7 @@ const getProducts = async (req, res) => {
 
 const getProduct = async (req, res) => {
   try {
-    if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.error(400, { friendlyMsg: "invalid Product id" });
-    }
-    const product = await Product.findOne({ _id: req.params.id });
+    const product = await Product.findOne({ where: { id: req.params.id } });
     if (!product) {
       return res.error(400, { friendlyMsg: "Product  not found" });
     }
@@ -75,18 +70,12 @@ const editProduct = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.error(400, { friendlyMsg: errors.array() });
     }
-    if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.error(400, { friendlyMsg: "invalid Product id" });
-    }
-    const product = await Product.findOne({ _id: req.params.id });
+
+    const product = await Product.findOne({ where: { id: req.params.id } });
     if (!product) {
       return res.error(400, { friendlyMsg: "Product not found" });
     }
 
-    const { name, description, price } = req.body;
-    let newName = name || product.name;
-    let newDescription = description || product.description;
-    let newPrice = price || product.price;
     let image = product.image;
     if (req.file) {
       if (fs.existsSync(`./public/images/${product.image}`)) {
@@ -94,20 +83,13 @@ const editProduct = async (req, res) => {
       }
       image = req.file.filename;
     }
-    await Product.updateOne(
-      { _id: req.params.id },
-      {
-        name: newName,
-        description: newDescription,
-        price: newPrice,
-        image: image,
-      },
-      { new: true }
-    );
+    await product.update({
+      ...req.body,
+      image: image,
+    });
     await client.del("products");
 
-    const updatedProduct = await Product.findOne({ _id: product.id });
-    res.ok(200, { product: updatedProduct, friendlyMsg: "Product updated" });
+    res.ok(200, { product: product, friendlyMsg: "Product updated" });
   } catch (error) {
     ApiError.internal(res, {
       message: error,
@@ -118,10 +100,7 @@ const editProduct = async (req, res) => {
 
 const deleteProduct = async (req, res) => {
   try {
-    if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.error(400, { friendlyMsg: "invalid Product id" });
-    }
-    const product = await Product.findOne({ _id: req.params.id });
+    const product = await Product.findOne({ where: { id: req.params.id } });
     if (!product) {
       return res.error(400, { friendlyMsg: "Product not found" });
     }
@@ -129,7 +108,7 @@ const deleteProduct = async (req, res) => {
     if (fs.existsSync(`./public/images/${product.image}`)) {
       fs.unlinkSync(`./public/images/${product.image}`);
     }
-    await Product.deleteOne({ _id: req.params.id });
+    await Product.destroy({ where: { id: req.params.id } });
     await client.del("products");
 
     res.ok(200, { friendlyMsg: "Product deleted" });
@@ -150,13 +129,13 @@ const filterProduct = async (req, res) => {
       options.name = name;
     }
     if (price) {
-      options.price = price;
+      options.price = +price;
     }
 
     if (createdBy) {
       options.createdBy = createdBy;
     }
-    const products = await Product.find(options);
+    const products = await Product.findAll({ where: options });
     res.ok(200, products);
   } catch (error) {
     ApiError.internal(res, {
@@ -171,7 +150,8 @@ const paginateProduct = async (req, res) => {
     const page = req.params.page;
     const limit = 10;
     const skip = (+page - 1) * limit;
-    const products = await Product.find().skip(skip).limit(limit);
+    const products = await Product.findAll({ offset: skip, limit: limit });
+
     res.ok(200, products);
   } catch (error) {
     ApiError.internal(res, {

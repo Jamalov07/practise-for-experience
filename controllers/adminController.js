@@ -1,21 +1,20 @@
 const { default: mongoose } = require("mongoose");
 const ApiError = require("../errors/ApiError");
-const { Admin } = require("../models/adminSchema");
 const bcrypt = require("bcryptjs");
 const MailerService = require("../services/MailerService");
 const Jwt = require("../services/JwtService");
 const config = require("config");
 const { validationResult } = require("express-validator");
 const { client } = require("../services/RedisService");
+const { Admin } = require("../models/adminModel");
 
 const getAdmins = async (req, res) => {
   try {
     const cashedAdmins = await client.get("admins");
     if (cashedAdmins) {
-      console.log(11111);
       return res.ok(200, JSON.parse(cashedAdmins));
     }
-    const admins = await Admin.find();
+    const admins = await Admin.findAll();
     console.log(admins);
     await client.set("admins", JSON.stringify(admins));
     res.ok(200, admins);
@@ -28,10 +27,7 @@ const getAdmins = async (req, res) => {
 
 const getAdminById = async (req, res) => {
   try {
-    if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.error(400, { friendlyMsg: "invalid admin id" });
-    }
-    const admin = await Admin.findOne({ _id: req.params.id });
+    const admin = await Admin.findOne({ where: { id: req.params.id } });
     if (!admin) {
       return res.error(400, { friendlyMsg: "Admin  not found" });
     }
@@ -50,20 +46,16 @@ const addAdmin = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.error(400, { friendlyMsg: errors.array() });
     }
-    const { username, password, email } = req.body;
-    const hashedPassword = bcrypt.hashSync(password, 7);
-
-    const admins = await Admin.find();
+    const hashedPassword = bcrypt.hashSync(req.body.password, 7);
+    const admins = await Admin.findAll();
     let creator = false;
     if (!admins.length) {
       creator = true;
     } else {
       creator = false;
     }
-
     const newAdmin = await Admin.create({
-      username: username,
-      email: email,
+      ...req.body,
       password: hashedPassword,
       is_creator: creator,
     });
@@ -88,34 +80,22 @@ const editAdmin = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.error(400, { friendlyMsg: errors.array() });
     }
-    if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.error(400, { friendlyMsg: "invalid Admin id" });
-    }
-    const admin = await Admin.findOne({ _id: req.params.id });
+
+    const admin = await Admin.findOne({ where: { id: req.params.id } });
     if (!admin) {
       return res.error(400, { friendlyMsg: "Admin not found" });
     }
-    const { username, email, password } = req.body;
-    let newUsername = username || admin.username;
-    let newEmail = email || admin.email;
     let newPassword = admin.password;
-    if (password) {
-      const hashedPassword = bcrypt.hashSync(password, 7);
+    if (req.body.password) {
+      const hashedPassword = bcrypt.hashSync(req.body.password, 7);
       newPassword = hashedPassword;
     }
-    await Admin.updateOne(
-      { _id: req.params.id },
-      {
-        username: newUsername,
-        email: newEmail,
-        admin_password: newPassword,
-      },
-      { new: true }
-    );
-
-    const updatedAdmin = await Admin.findOne({ _id: admin.id });
+    await admin.update({
+      ...req.body,
+      password: newPassword,
+    });
     await client.del("admins");
-    res.ok(200, { admin: updatedAdmin, message: "Admin updated" });
+    res.ok(200, { admin: admin, message: "Admin updated" });
   } catch (error) {
     ApiError.internal(res, {
       message: error,
@@ -126,14 +106,11 @@ const editAdmin = async (req, res) => {
 
 const deleteAdmin = async (req, res) => {
   try {
-    if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.error(400, { friendlyMsg: "invalid Admin id" });
-    }
-    const admin = await Admin.findOne({ _id: req.params.id });
+    const admin = await Admin.findOne({ where: { id: req.params.id } });
     if (!admin) {
       return res.error(400, { friendlyMsg: "Admin not found" });
     }
-    await Admin.deleteOne({ _id: req.params.id });
+    await Admin.destroy({ where: { id: req.params.id } });
     await client.del("admins");
     res.ok(200, { admin: admin, friendlyMsg: "Admin deleted" });
   } catch (error) {
@@ -151,7 +128,7 @@ const loginAdmin = async (req, res) => {
       return res.error(400, { friendlyMsg: errors.array() });
     }
     const { email, password } = req.body;
-    const admin = await Admin.findOne({ email: email });
+    const admin = await Admin.findOne({ where: { email: email } });
     if (!admin) {
       return res.error(400, {
         friendlyMsg: "Admin not found brat biz sizni tanimadik",

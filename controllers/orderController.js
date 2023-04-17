@@ -1,10 +1,9 @@
-const mongoose = require("mongoose");
-const { Order } = require("../models/orderSchema");
 const ApiError = require("../errors/ApiError");
 const MailerService = require("../services/MailerService");
-const { User } = require("../models/userSchema");
 const { validationResult } = require("express-validator");
 const { client } = require("../services/RedisService");
+const { Order } = require("../models/orderModel");
+const { User } = require("../models/UserModel");
 
 const getOrders = async (req, res) => {
   try {
@@ -12,7 +11,7 @@ const getOrders = async (req, res) => {
     if (cashedOrders) {
       return res.ok(200, JSON.parse(cashedOrders));
     }
-    const orders = await Order.find({});
+    const orders = await Order.findAll();
     client.set("orders", JSON.stringify(orders));
     console.log(orders);
     res.ok(200, orders);
@@ -26,10 +25,7 @@ const getOrders = async (req, res) => {
 
 const getOrder = async (req, res) => {
   try {
-    if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.error(400, { friendlyMsg: "invalid Order id" });
-    }
-    const order = await Order.findOne({ _id: req.params.id });
+    const order = await Order.findOne({ where: { id: req.params.id } });
     if (!order) {
       return res.error(400, { friendlyMsg: "Order  not found" });
     }
@@ -48,15 +44,9 @@ const addOrder = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.error(400, { friendlyMsg: errors.array() });
     }
-    const { customer, products, status, orderDate } = req.body;
-    const newOrder = await Order.create({
-      customer,
-      products,
-      status,
-      orderDate,
-    });
+    const newOrder = await Order.create(req.body);
     await client.del("orders");
-    const user = await User.findOne({ _id: customer });
+    const user = await User.findOne({ where: { id: req.body.customer } });
     if (user) {
       await MailerService.newOrderMessage(
         user.email,
@@ -79,44 +69,23 @@ const editOrder = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.error(400, { friendlyMsg: errors.array() });
     }
-    console.log(req.params.id);
-    if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.error(400, { friendlyMsg: "invalid Order id" });
-    }
-    const order = await Order.findOne({ _id: req.params.id });
-    console.log(order);
+    const order = await Order.findOne({ where: { id: req.params.id } });
     if (!order) {
       return res.error(400, { friendlyMsg: "Order not found" });
     }
-
-    const { customer, products, orderDate, status } = req.body;
-    let newCustomer = customer || order.customer;
-    let newProducts = products || order.products;
-    let newOrderDate = orderDate || order.orderDate;
-    let newStatus = status || order.status;
-    if (status && order.status !== status) {
-      console.log(customer, "buuuu");
-      const user = await User.findOne({ _id: newCustomer });
+    let newCustomer = req.body.customer || order.customer;
+    if (req.body.status && order.status !== req.body.status) {
+      const user = await User.findOne({ where: { id: newCustomer } });
       if (user) {
         await MailerService.newOrderMessage(
           user.email,
-          `Orderingizning holati ${status}ga yangilandi`
+          `Orderingizning holati ${req.body.status}ga yangilandi`
         );
       }
     }
-    await Order.updateOne(
-      { _id: req.params.id },
-      {
-        customer: newCustomer,
-        products: newProducts,
-        orderDate: newOrderDate,
-        status: newStatus,
-      },
-      { new: true }
-    );
+    await order.update(req.body);
     await client.del("orders");
-    const updatedOrder = await Order.findOne({ _id: order.id });
-    res.ok(200, { order: updatedOrder, friendlyMsg: "Order updated" });
+    res.ok(200, { order: order, friendlyMsg: "Order updated" });
   } catch (error) {
     ApiError.internal(res, {
       message: error,
@@ -127,15 +96,12 @@ const editOrder = async (req, res) => {
 
 const deleteOrder = async (req, res) => {
   try {
-    if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.error(400, { friendlyMsg: "invalid Order id" });
-    }
-    const order = await Order.findOne({ _id: req.params.id });
+    const order = await Order.findOne({ where: { id: req.params.id } });
     if (!order) {
       return res.error(400, { friendlyMsg: "Order not found" });
     }
 
-    await Order.deleteOne({ _id: req.params.id });
+    await Order.destroy({ where: { id: req.params.id } });
     await client.del("orders");
     res.ok(200, { friendlyMsg: "Order deleted" });
   } catch (error) {
@@ -163,8 +129,7 @@ const filterOrder = async (req, res) => {
     if (products) {
       options.products = products.split(",");
     }
-    const orders = await Order.find(options);
-    console.log(orders);
+    const orders = await Order.findAll({ where: options });
     res.ok(200, orders);
   } catch (error) {
     ApiError.internal(res, {
@@ -179,7 +144,7 @@ const paginateOrder = async (req, res) => {
     const page = req.params.page;
     const limit = 10;
     const skip = (+page - 1) * limit;
-    const orders = await Order.find().skip(skip).limit(limit);
+    const orders = await Order.findAll({ offset: skip, limit: limit });
     res.ok(200, orders);
   } catch (error) {
     ApiError.internal(res, {
@@ -195,7 +160,7 @@ const newOrderWithCookie = async (req, res) => {
     if (!cart) {
       return res.error(400, { friendlyMsg: "products not added for order" });
     }
-    console.log(cart)
+    console.log(cart);
     const newOrder = await Order.create({
       products: cart,
       customer: req.body.customer,

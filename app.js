@@ -55,7 +55,7 @@ async function start() {
     await sequelize.authenticate();
     await sequelize.sync();
     console.log("Connection has been established successfully");
-    await mongoose.connect(config.get("dbAdr"));
+    // await mongoose.connect(config.get("dbAdr"));
     console.log(await client.get("ping"));
     app.listen(PORT, () => {
       console.log(`Server ${PORT} - portda ishga tushdi`);

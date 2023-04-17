@@ -13,7 +13,7 @@ const User = sequelize.define("user", {
   email: { type: DataTypes.STRING },
   password: { type: DataTypes.STRING },
   username: { type: DataTypes.STRING },
-  is_active: { type: DataTypes.BOOLEAN },
+  is_active: { type: DataTypes.BOOLEAN,defaultValue:true },
 });
 
 module.exports = {
