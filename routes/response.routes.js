@@ -31,59 +31,59 @@ module.exports = router;
 const traverse = require("traverse");
 const mongoose = require("mongoose");
 
-const removeNullableNestedObject = function (params, showNull, callback) {
-  let prunedParams = traverse(params).map(function (value) {
-    if (
-      lodash.isUndefined(value) ||
-      lodash.isNull(value) ||
-      lodash.isNaN(value) ||
-      (lodash.isString(value) && lodash.isEmpty(value)) ||
-      (lodash.isObject(value) && lodash.isEmpty(value) && !lodash.isDate(value))
-    ) {
-      if (showNull) {
-        if (lodash.isNumber(value)) return 0;
-        if (lodash.isArray(value)) return [];
-        if (value instanceof mongoose.Types.ObjectId) return value; // check if value is a Mongoose ObjectID
-        return "";
-      }
-      // this.delete();
-    }
-  });
-  callback(prunedParams);
-};
-
 // const removeNullableNestedObject = function (params, showNull, callback) {
-//   try {
-//     params = pruneEmpty(params, showNull);
-//   } catch (ex) {
-//     console.log(ex);
-//     console.error("Error when remove nullable nested objects", ex);
-//   }
-//   callback(params);
+//   let prunedParams = traverse(params).map(function (value) {
+//     if (
+//       lodash.isUndefined(value) ||
+//       lodash.isNull(value) ||
+//       lodash.isNaN(value) ||
+//       (lodash.isString(value) && lodash.isEmpty(value)) ||
+//       (lodash.isObject(value) && lodash.isEmpty(value) && !lodash.isDate(value))
+//     ) {
+//       if (showNull) {
+//         if (lodash.isNumber(value)) return 0;
+//         if (lodash.isArray(value)) return [];
+//         if (value instanceof mongoose.Types.ObjectId) return value; // check if value is a Mongoose ObjectID
+//         return "";
+//       }
+//       // this.delete();
+//     }
+//   });
+//   callback(prunedParams);
 // };
 
-// function pruneEmpty(obj, showNull) {
-//   console.log(obj, showNull);
-//   return (function prune(current) {
-//     lodash.forOwn(current, function (value, key) {
-//       if (
-//         lodash.isUndefined(value) ||
-//         lodash.isNull(value) ||
-//         lodash.isNaN(value) ||
-//         (lodash.isString(value) && lodash.isEmpty(value)) ||
-//         (lodash.isObject(value) &&
-//           lodash.isEmpty(prune(value)) &&
-//           !lodash.isDate(value))
-//       ) {
-//         if (showNull) current[key] = "";
-//         if (showNull && lodash.isNumber(current[key]))
-//           return (current[key] = 0);
-//         if (showNull && lodash.isArray(value)) return (current[key] = []);
-//         delete current[key];
-//       }
-//     });
-//     if (lodash.isArray(current)) lodash.pull(current, undefined);
+const removeNullableNestedObject = function (params, showNull, callback) {
+  try {
+    params = pruneEmpty(params, showNull);
+  } catch (ex) {
+    console.log(ex);
+    console.error("Error when remove nullable nested objects", ex);
+  }
+  callback(params);
+};
 
-//     return current;
-//   })(lodash.cloneDeep(obj));
-// }
+function pruneEmpty(obj, showNull) {
+  console.log(obj, showNull);
+  return (function prune(current) {
+    lodash.forOwn(current, function (value, key) {
+      if (
+        lodash.isUndefined(value) ||
+        lodash.isNull(value) ||
+        lodash.isNaN(value) ||
+        (lodash.isString(value) && lodash.isEmpty(value)) ||
+        (lodash.isObject(value) &&
+          lodash.isEmpty(prune(value)) &&
+          !lodash.isDate(value))
+      ) {
+        if (showNull) current[key] = "";
+        if (showNull && lodash.isNumber(current[key]))
+          return (current[key] = 0);
+        if (showNull && lodash.isArray(value)) return (current[key] = []);
+        delete current[key];
+      }
+    });
+    if (lodash.isArray(current)) lodash.pull(current, undefined);
+
+    return current;
+  })(lodash.cloneDeep(obj));
+}

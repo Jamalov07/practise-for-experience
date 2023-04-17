@@ -17,6 +17,12 @@ router.post(
   ...orderAdd,
   Order.addOrder
 );
+router.post(
+  "/cart",
+
+  UserMiddleware,
+  Order.newOrderWithCookie
+);
 router.patch("/:id", ...orderEdit, UserMiddleware, Order.editOrder);
 router.delete("/:id", Order.deleteOrder);
 

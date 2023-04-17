@@ -12,6 +12,7 @@ router.get("/", Product.getProducts);
 router.get("/filter", Product.filterProduct);
 router.get("/:id", Product.getProduct);
 router.get("/page/:page", Product.paginateProduct);
+router.post("/cart/:id", Product.addtoCookie);
 router.post(
   "/",
   AdminMiddleware,

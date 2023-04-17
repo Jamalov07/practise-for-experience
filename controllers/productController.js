@@ -181,6 +181,25 @@ const paginateProduct = async (req, res) => {
   }
 };
 
+const addtoCookie = async (req, res) => {
+  try {
+    let cart = req.cookies.cart;
+    console.log(req.cookies);
+    if (!cart) {
+      cart = [req.params.id];
+    } else {
+      cart.push(req.params.id);
+    }
+    res.cookie("cart", cart);
+    return res.ok(200, "ok");
+  } catch (error) {
+    ApiError.internal(res, {
+      message: error,
+      friendlyMsg: "Serverda hatolik",
+    });
+  }
+};
+
 module.exports = {
   getProducts,
   getProduct,
@@ -189,4 +208,5 @@ module.exports = {
   deleteProduct,
   filterProduct,
   paginateProduct,
+  addtoCookie,
 };

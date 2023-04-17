@@ -189,6 +189,26 @@ const paginateOrder = async (req, res) => {
   }
 };
 
+const newOrderWithCookie = async (req, res) => {
+  try {
+    const cart = req.cookies.cart;
+    if (!cart) {
+      return res.error(400, { friendlyMsg: "products not added for order" });
+    }
+    console.log(cart)
+    const newOrder = await Order.create({
+      products: cart,
+      customer: req.body.customer,
+    });
+    return res.ok(200, { order: newOrder });
+  } catch (error) {
+    ApiError.internal(res, {
+      message: error,
+      friendlyMsg: "Serverda hatolik",
+    });
+  }
+};
+
 module.exports = {
   getOrders,
   getOrder,
@@ -197,4 +217,5 @@ module.exports = {
   deleteOrder,
   filterOrder,
   paginateOrder,
+  newOrderWithCookie,
 };

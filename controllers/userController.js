@@ -1,11 +1,13 @@
 const mongoose = require("mongoose");
-const { User } = require("../models/userSchema");
+// const { User } = require("../models/userSchema");
+
 const ApiError = require("../errors/ApiError");
 const bcrypt = require("bcryptjs");
 const Jwt = require("../services/JwtService");
 const config = require("config");
 const { validationResult } = require("express-validator");
 const { client } = require("../services/RedisService");
+const { User } = require("../models/UserModel");
 
 const getUsers = async (req, res) => {
   try {
@@ -14,7 +16,7 @@ const getUsers = async (req, res) => {
       return res.ok(200, JSON.parse(cashedUsers));
     }
 
-    const users = await User.find({});
+    const users = await User.findAll();
     await client.set("users", JSON.stringify(users));
     console.log(users);
     res.ok(200, users);
@@ -28,10 +30,10 @@ const getUsers = async (req, res) => {
 
 const getUser = async (req, res) => {
   try {
-    if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.error(400, { friendlyMsg: "invalid User id" });
-    }
-    const user = await User.findOne({ _id: req.params.id });
+    // if (!mongoose.isValidObjectId(req.params.id)) {
+    //   return res.error(400, { friendlyMsg: "invalid User id" });
+    // }
+    const user = await User.findOne({ where: { id: req.params.id } });
     if (!user) {
       return res.error(400, { friendlyMsg: "User  not found" });
     }
@@ -74,7 +76,7 @@ const addUser = async (req, res) => {
       httpOnly: true,
     });
 
-    res.ok(200, { ...tokens, user: payload });
+    res.ok(200, { ...tokens, user: newUser });
   } catch (error) {
     ApiError.internal(res, {
       message: error,
@@ -89,10 +91,10 @@ const editUser = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.error(400, { friendlyMsg: errors.array() });
     }
-    if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.error(400, { friendlyMsg: "invalid User id" });
-    }
-    const user = await User.findOne({ _id: req.params.id });
+    // if (!mongoose.isValidObjectId(req.params.id)) {
+    //   return res.error(400, { friendlyMsg: "invalid User id" });
+    // }
+    const user = await User.findOne({ where: { id: req.params.id } });
     if (!user) {
       return res.error(400, { friendlyMsg: "User not found" });
     }
@@ -107,7 +109,7 @@ const editUser = async (req, res) => {
       const hashedPassword = bcrypt.hashSync(password, 7);
       newPassword = hashedPassword;
     }
-    await User.updateOne(
+    await User.update(
       { _id: req.params.id },
       {
         full_name: newFullName,
@@ -115,12 +117,11 @@ const editUser = async (req, res) => {
         phone_number: newPhoneNumber,
         username: newUsername,
         password: newPassword,
-      },
-      { new: true }
+      }
     );
     await client.del("users");
 
-    const updatedUser = await User.findOne({ _id: user.id });
+    const updatedUser = await User.findOne({ where: { id: user.id } });
     res.ok(200, { user: updatedUser, friendlyMsg: "User updated" });
   } catch (error) {
     ApiError.internal(res, {
@@ -132,9 +133,9 @@ const editUser = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.error(400, { friendlyMsg: "invalid User id" });
-    }
+    // if (!mongoose.isValidObjectId(req.params.id)) {
+    //   return res.error(400, { friendlyMsg: "invalid User id" });
+    // }
     const user = await User.findOne({ _id: req.params.id });
     if (!user) {
       return res.error(400, { friendlyMsg: "User not found" });
