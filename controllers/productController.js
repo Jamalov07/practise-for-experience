@@ -25,7 +25,7 @@ const getProduct = async (req, res) => {
   try {
     const product = await Product.findOne({ where: { id: req.params.id } });
     if (!product) {
-      return res.error(400, { friendlyMsg: "Product  not found" });
+      return res.error(400, { friendlyMsg: "Product not found" });
     }
     res.ok(200, product);
   } catch (error) {
@@ -42,16 +42,16 @@ const addProduct = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.error(400, { friendlyMsg: errors.array() });
     }
-    const { name, description, price } = req.body;
-    if (!req.file) {
-      return res.error(400, { friendlyMsg: "File is required" });
-    }
+    const { name, description, price, createdBy } = req.body;
+    // if (!req.file) {
+    //   return res.error(400, { friendlyMsg: "File is required" });
+    // }
     const newProduct = await Product.create({
       name,
       description,
       price,
-      image: req.file.filename,
-      createdBy: req.admin.id,
+      image: req?.file?.filename || "",
+      createdBy: req?.admin?.id || createdBy,
     });
     await client.del("products");
 
@@ -106,7 +106,11 @@ const deleteProduct = async (req, res) => {
     }
 
     if (fs.existsSync(`./public/images/${product.image}`)) {
-      fs.unlinkSync(`./public/images/${product.image}`);
+      try {
+        fs.unlinkSync(`./public/images/${product.image}`);
+      } catch (error) {
+        
+      }
     }
     await Product.destroy({ where: { id: req.params.id } });
     await client.del("products");

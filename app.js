@@ -17,8 +17,14 @@ const sequelize = require("./config/db");
 
 app.use(winstonLogger);
 app.use(express.json());
-app.use(bodyParser.json());
-// app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: "100mb" }));
+app.use(
+  bodyParser.urlencoded({
+    limit: "100mb",
+    extended: true,
+    // parameterLimit: 50000,
+  })
+);
 app.set("view engine", "ejs");
 app.engine("html", require("ejs").renderFile);
 app.use(express.static(path.join(__dirname, "./views")));

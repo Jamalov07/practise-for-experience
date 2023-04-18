@@ -108,7 +108,7 @@ const deleteAdmin = async (req, res) => {
   try {
     const admin = await Admin.findOne({ where: { id: req.params.id } });
     if (!admin) {
-      return res.error(400, { friendlyMsg: "Admin not found" });
+      return res.error(404, { friendlyMsg: "Admin not found" });
     }
     await Admin.destroy({ where: { id: req.params.id } });
     await client.del("admins");
@@ -150,7 +150,7 @@ const loginAdmin = async (req, res) => {
       httpOnly: true,
     });
 
-    res.ok(200, tokens);
+    res.ok(200, { ...tokens, admin: admin.id });
   } catch (error) {
     ApiError.internal(res, {
       message: error,

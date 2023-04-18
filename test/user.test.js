@@ -15,7 +15,6 @@ describe("User API", () => {
       .request(server)
       .post("/admin/login")
       .send({ email: "jamalovn07@gmail.com", password: "jamalovn07" });
-
     expect(res.body).to.have.status(200);
     expect(res.body.data).to.have.property("accessToken");
     userToken = res.body.accessToken;
@@ -74,7 +73,71 @@ describe("User API", () => {
         .request(server)
         .get("/user/999")
         .set("Authorization", `Bearer ${userToken}`);
-      expect(res).to.have.status(400);
+      expect(res).to.have.status(404);
+      expect(res.body.error).to.have.property("friendlyMsg");
+    });
+  });
+
+  describe("PATCH /user/:id", () => {
+    it("should update a user by id", async () => {
+      const res = await chai
+        .request(server)
+        .patch(`/user/${userId}`)
+        .set("Authorization", `Bearer ${userToken}`)
+        .send({ full_name: "John Doe" });
+      expect(res).to.have.status(200);
+      expect(res.body.data.user).to.have.property("full_name").eq("John Doe");
+      expect(res.body.data).to.have.property("friendlyMsg").eq("User updated");
+    });
+
+    it("should return 400 if user id is invalid", async () => {
+      const res = await chai
+        .request(server)
+        .patch("/user/invalid-id")
+        .set("Authorization", `Bearer ${userToken}`)
+        .send({ full_name: "John Doe" }); // Try to update the user's full name with an invalid id
+      expect(res).to.have.status(500);
+      expect(res.body.error).to.have.property("friendlyMsg");
+    });
+
+    it("should return 404 if user is not found", async () => {
+      const res = await chai
+        .request(server)
+        .patch("/user/999")
+        .set("Authorization", `Bearer ${userToken}`)
+        .send({ full_name: "John Doe" });
+      // Try to update the user's full name with a non-existent id
+      expect(res).to.have.status(404);
+      expect(res.body.error).to.have.property("friendlyMsg");
+    });
+  });
+
+  describe("DELETE /user/:id", () => {
+    it("should delete a user by id", async () => {
+      const res = await chai
+        .request(server)
+        .delete(`/user/${userId}`)
+        .set("Authorization", `Bearer ${userToken}`);
+      expect(res).to.have.status(200);
+      expect(res.body.data).to.have.property("friendlyMsg").eq("User deleted");
+    });
+
+    it("should return 400 if user id is invalid", async () => {
+      const res = await chai
+        .request(server)
+        .delete("/user/invalid-id")
+        .set("Authorization", `Bearer ${userToken}`);
+
+      expect(res).to.have.status(500);
+      expect(res.body.error).to.have.property("friendlyMsg");
+    });
+
+    it("should return 404 if user is not found", async () => {
+      const res = await chai
+        .request(server)
+        .delete("/user/999")
+        .set("Authorization", `Bearer ${userToken}`);
+      expect(res).to.have.status(404);
       expect(res.body.error).to.have.property("friendlyMsg");
     });
   });

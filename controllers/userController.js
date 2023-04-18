@@ -12,10 +12,8 @@ const getUsers = async (req, res) => {
     if (cashedUsers) {
       return res.ok(200, JSON.parse(cashedUsers));
     }
-
     const users = await User.findAll();
     await client.set("users", JSON.stringify(users));
-    console.log(users);
     res.ok(200, users);
   } catch (error) {
     ApiError.internal(res, {
@@ -27,12 +25,9 @@ const getUsers = async (req, res) => {
 
 const getUser = async (req, res) => {
   try {
-    // if (!mongoose.isValidObjectId(req.params.id)) {
-    //   return res.error(400, { friendlyMsg: "invalid User id" });
-    // }
     const user = await User.findOne({ where: { id: req.params.id } });
     if (!user) {
-      return res.error(400, { friendlyMsg: "User  not found" });
+      return res.error(404, { friendlyMsg: "User not found" });
     }
     res.ok(200, user);
   } catch (error) {
@@ -51,7 +46,6 @@ const addUser = async (req, res) => {
     }
     const { full_name, phone_number, email, username, password } = req.body;
     const hashedPassword = bcrypt.hashSync(password, 7);
-
     const newUser = await User.create({
       full_name,
       email,
@@ -59,21 +53,18 @@ const addUser = async (req, res) => {
       phone_number,
       username,
     });
-
     await client.del("users");
-
     const payload = {
       sub: newUser.id,
       is_active: newUser.is_active,
     };
     const tokens = Jwt.generateTokens(payload);
-
     res.cookie("refreshToken", tokens.refreshToken, {
       maxAge: config.get("refresh_ms"),
       httpOnly: true,
     });
 
-    res.ok(200, { ...tokens, user: newUser });
+    res.ok(200, { ...tokens, user: newUser.id });
   } catch (error) {
     ApiError.internal(res, {
       message: error,
@@ -90,9 +81,8 @@ const editUser = async (req, res) => {
     }
     const user = await User.findOne({ where: { id: req.params.id } });
     if (!user) {
-      return res.error(400, { friendlyMsg: "User not found" });
+      return res.error(404, { friendlyMsg: "User not found" });
     }
-
     let newPassword = user.password;
     if (req.body.password) {
       const hashedPassword = bcrypt.hashSync(password, 7);
@@ -116,11 +106,10 @@ const deleteUser = async (req, res) => {
   try {
     const user = await User.findOne({ where: { id: req.params.id } });
     if (!user) {
-      return res.error(400, { friendlyMsg: "User not found" });
+      return res.error(404, { friendlyMsg: "User not found" });
     }
     await User.destroy({ where: { id: req.params.id } });
     await client.del("users");
-
     res.ok(200, { friendlyMsg: "User deleted" });
   } catch (error) {
     ApiError.internal(res, {
@@ -138,7 +127,6 @@ const loginUser = async (req, res) => {
     }
     const { email, password } = req.body;
     const user = await User.findOne({ where: { email: email } });
-
     if (!user) {
       return res.error(400, {
         friendlyMsg: "User not found brat biz sizni tanimadik",
@@ -157,7 +145,6 @@ const loginUser = async (req, res) => {
       maxAge: config.get("refresh_ms"),
       httpOnly: true,
     });
-
     res.ok(200, tokens);
   } catch (error) {
     ApiError.internal(res, {

@@ -27,7 +27,7 @@ const getOrder = async (req, res) => {
   try {
     const order = await Order.findOne({ where: { id: req.params.id } });
     if (!order) {
-      return res.error(400, { friendlyMsg: "Order  not found" });
+      return res.error(400, { friendlyMsg: "Order not found" });
     }
     res.ok(200, order);
   } catch (error) {
