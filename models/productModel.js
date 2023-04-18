@@ -1,5 +1,6 @@
 const sequelize = require("../config/db");
 const { DataTypes } = require("sequelize");
+const { Admin } = require("./adminModel");
 
 const Product = sequelize.define("product", {
   id: {
@@ -15,6 +16,7 @@ const Product = sequelize.define("product", {
   createdBy: { type: DataTypes.INTEGER },
 });
 
+Product.belongsTo(Admin, { as: "admin" });
 
 module.exports = {
   Product,

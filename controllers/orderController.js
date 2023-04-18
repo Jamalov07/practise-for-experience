@@ -4,6 +4,7 @@ const { validationResult } = require("express-validator");
 const { client } = require("../services/RedisService");
 const { Order } = require("../models/orderModel");
 const { User } = require("../models/UserModel");
+const { Product } = require("../models/productModel");
 
 const getOrders = async (req, res) => {
   try {
@@ -44,8 +45,14 @@ const addOrder = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.error(400, { friendlyMsg: errors.array() });
     }
+    let msg = await checkProducts(res, req.body.products);
+    if (msg) {
+      return res.error(400, { friendlyMsg: "Product not found" });
+    }
     const newOrder = await Order.create(req.body);
     await client.del("orders");
+    await client.del("productids");
+
     const user = await User.findOne({ where: { id: req.body.customer } });
     if (user) {
       await MailerService.newOrderMessage(
@@ -72,6 +79,12 @@ const editOrder = async (req, res) => {
     const order = await Order.findOne({ where: { id: req.params.id } });
     if (!order) {
       return res.error(400, { friendlyMsg: "Order not found" });
+    }
+    if (req.body.products) {
+      let msg = await checkProducts(res, req.body.products);
+      if (msg) {
+        return res.error(400, { friendlyMsg: "Product not found" });
+      }
     }
     let newCustomer = req.body.customer || order.customer;
     if (req.body.status && order.status !== req.body.status) {
@@ -103,6 +116,7 @@ const deleteOrder = async (req, res) => {
 
     await Order.destroy({ where: { id: req.params.id } });
     await client.del("orders");
+    await client.del("productids");
     res.ok(200, { friendlyMsg: "Order deleted" });
   } catch (error) {
     ApiError.internal(res, {
@@ -172,6 +186,29 @@ const newOrderWithCookie = async (req, res) => {
       friendlyMsg: "Serverda hatolik",
     });
   }
+};
+
+const checkProducts = async (res, prodIds) => {
+  let productIds;
+  let products;
+  let cashedproductid = await client.get("productids");
+  if (cashedproductid) {
+    productIds = JSON.parse(cashedproductid);
+  } else {
+    products = await Product.findAll();
+    await client.set("products", JSON.stringify(products));
+    productIds = [];
+    products.forEach((product) => {
+      productIds.push(product.id);
+    });
+    await client.set("productids", JSON.stringify(productIds));
+  }
+  for (let i = 0; i < prodIds.length; i++) {
+    if (!productIds.includes(prodIds[i])) {
+      return true;
+    }
+  }
+  return false;
 };
 
 module.exports = {
