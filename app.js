@@ -22,7 +22,6 @@ app.use(
   bodyParser.urlencoded({
     limit: "100mb",
     extended: true,
-    // parameterLimit: 50000,
   })
 );
 app.set("view engine", "ejs");
